@@ -16,12 +16,11 @@ class Species:
 
     """
 
-    def __init__(self, species_name, population, r_val=1.0):
+    def __init__(self, species_name, population):
         """simple constructor containing str species_name, int population, and float r_val."""
 
         self.species_name = species_name
         self.population = population
-        self.r_val = r_val
 
     def __repr__(self):
         """__repr__ method that shows all class attributes and their values."""
@@ -39,11 +38,8 @@ class Species:
 
     def get_population(self):
         """Return population."""
-        return self.species_name
+        return self.population
 
-    def get_r_val(self):
-        """Return r_val."""
-        return self.r_val
 
     def set_population(self, new_population):
         """Set population."""
