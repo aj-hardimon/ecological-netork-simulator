@@ -7,6 +7,7 @@ Date: 7/25/2025
 import networkx as nx
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+from pyvis.network import Network
 import csv
 import requests
 
@@ -31,7 +32,7 @@ class EcologicalNetwork():
     def create_network(self):
         i = 0
         lst_len = len(self.species_list)
-        for species in self.species_list:
+        for species in ['canis lupus', 'procyon lotor', 'lynx rufus']:
             species = species.lower()
             self.network.add_node(species)
             prey_list = EcologicalNetwork.get_prey_list(species=species)
@@ -133,7 +134,6 @@ class EcologicalNetwork():
         
         edge_x = []
         edge_y = []
-        edge_text = []
         pos = nx.spring_layout(self.network)
 
         for u, v in self.network.edges():
@@ -145,16 +145,13 @@ class EcologicalNetwork():
             edge_y.append(y0)
             edge_y.append(y1)
             edge_y.append(None)
-            edge_text.append(f"{u} eats: {v}")
 
         edge_trace = go.Scatter(
             x=edge_x, 
             y=edge_y,
-            mode='lines',
             line=dict(width=0.8, color='#888'),
-            hoverinfo='text',
-            hovertext=edge_text
-            )
+            hoverinfo='none',
+            mode='lines')
 
         node_x = []
         node_y = []
@@ -164,7 +161,7 @@ class EcologicalNetwork():
 
 
         for node in self.network.nodes():
-            if(len(self.network.edges(node)) > 0):
+            if(self.network.in_degree(node) > 0 or self.network.out_degree(node) > 0):
                 x, y = pos[node]
                 node_x.append(x)
                 node_y.append(y)
@@ -199,12 +196,13 @@ class EcologicalNetwork():
         
         node_adjacencies = []
         
-        
+        for node, adjacencies in enumerate(self.network.adjacency()):
+            node_adjacencies.append(len(adjacencies[1]))
+            
 
         node_trace.marker.color = node_adj
         node_trace.marker.size = node_size
         node_trace.text = node_text
-        edge_trace.text = edge_text
 
         fig = go.Figure(data=[edge_trace, node_trace],
             layout=go.Layout(
@@ -226,7 +224,7 @@ class EcologicalNetwork():
                 yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
                 )
         
-        fig.show()
+        fig.show(renderer="browser")
 
 
 def get_yosemitie_species():
