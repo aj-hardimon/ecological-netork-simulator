@@ -172,7 +172,10 @@ class EcologicalNetwork():
 
         node_trace = go.Scatter(
             x=node_x, y=node_y,
-            mode='markers',
+            mode='markers+text',
+            text=node_text,
+            textposition="bottom center",
+            textfont=dict(size=12),
             hoverinfo='text',
             marker=dict(
                 showscale=True,
