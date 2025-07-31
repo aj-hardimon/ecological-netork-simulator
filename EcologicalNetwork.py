@@ -8,9 +8,10 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from pyvis.network import Network
-import csv
 import requests
-
+import webbrowser
+import os
+from Species import Species
 
 class EcologicalNetwork():
     """ A class that creates a graph of species with directed edges indicating
@@ -32,15 +33,39 @@ class EcologicalNetwork():
     def create_network(self):
         i = 0
         lst_len = len(self.species_list)
-        for species in ['canis lupus', 'procyon lotor', 'lynx rufus']:
-            species = species.lower()
-            self.network.add_node(species)
+        
+        for species in self.species_list:
+            # Add a node for each species in the list and lebel them
+            # according to their common name
+            if(species not in self.network.nodes()):
+                # Create an instance of Species class for species attirbutes
+                sp_attrb = Species(species_name=species)
+                # Create a node compatible with pyvis
+                self.network.add_node(species, 
+                                    id=sp_attrb.get_species_name(), 
+                                    label=sp_attrb.get_common_name(),
+                                    group=sp_attrb.get_category(),
+                                    title=f"{sp_attrb.get_common_name()} ({"Native" if sp_attrb.get_nativeness() else "Non-Native"})"
+                                    )
+
             prey_list = EcologicalNetwork.get_prey_list(species=species)
+
+            # Go through every prey and add to graph if in species_list
             if prey_list is not None:
                 for prey in prey_list:
                     if(prey is not None and prey in self.species_list):
-                        self.network.add_node(prey)
-                        self.network.add_edge(species, prey)
+                        if prey not in self.network.nodes():
+                            # Add prey to the graph if not found
+                            pr_attrb = Species(species_name=prey)
+                            self.network.add_node(prey, 
+                                    id=pr_attrb.get_species_name(), 
+                                    label=pr_attrb.get_common_name(),
+                                    group=pr_attrb.get_category(),
+                                    title=f"{pr_attrb.get_common_name()} ({"Native" if pr_attrb.get_nativeness() else "Non-Native"})"
+                                    )
+                        # Add the edge between species and prey
+                        self.network.add_edge(species, prey, title=f"{self.network.nodes[species]['label']} eats {self.network.nodes[prey]['label']}")
+            self.network.nodes[species]['size'] = (15 + 0.2 * self.network.out_degree(species))
             i += 1
             print(f"{i}/{lst_len} completed")
 
@@ -53,6 +78,7 @@ class EcologicalNetwork():
         prey_list = []
         prey_json = EcologicalNetwork._get_prey_json(species=species)
 
+        # If json file is found clean each prey name and append it to list
         if prey_json:
             try:
                 for list in prey_json["data"]:
@@ -72,6 +98,7 @@ class EcologicalNetwork():
         """
         url = f"https://api.globalbioticinteractions.org/taxon/{species}/eats"
 
+        # Ping API for a json file for the prey of input species
         try:
             response = requests.get(url=url)
 
@@ -95,6 +122,7 @@ class EcologicalNetwork():
         predator_list = []
         predator_json = EcologicalNetwork._get_predator_jsond(species=species)
 
+        # If json file is found clean each predator name and append it to list
         if predator_json:
             try:
                 for list in predator_json["data"]:
@@ -114,6 +142,7 @@ class EcologicalNetwork():
         """
         url = f"https://api.globalbioticinteractions.org/taxon/{species}/preyedUponBy"
 
+        # Ping API for a json file for the predators of input species
         try:
             response = requests.get(url=url)
 
@@ -229,36 +258,68 @@ class EcologicalNetwork():
         
         fig.show(renderer="browser")
 
+    def draw_graph_pyvis(self):
+        network_pyvis = Network(
+            height='1000px', 
+            width='100%',
+            directed=True,
+            font_color="black",
+            bgcolor="#ffffff",
+            neighborhood_highlight=True,
+            select_menu=True,
+            notebook=False
+            )
 
-def get_yosemitie_species():
-    """ Uses a csv file to create a list of species within Yosemitie Natinoal
-        Park
-    """
+        network_pyvis.from_nx(self.network)
 
-    yosemitie_species_lst = []
-    file_path = "Data-Files/Species Full List with Details.csv"
-
-    with open(file_path, "r") as species_csv:
-        csv_reader = csv.reader(species_csv)
-        i = 0
-        try:
-            for line in csv_reader:
-                if i >= 5 and len(line) >= 4:
-                    yosemitie_species_lst.append(line[3].lower())
-                i += 1
-        except IndexError:
-            print("Index Error")
-            return None
-        else:
-            return yosemitie_species_lst
         
-species_lst = get_yosemitie_species()
+        physics_options = """{
+                "physics": {
+                    "forceAtlas2Based":{
+                        "springLength": 100
+                    },
+                    "minVelocity": 0.5,
+                    "solver": "forceAtlas2Based"
+                },
+                "nodes":{
+                    "font": {
+                        "strokeWidth": 3
+                    }
+                },
+                "edges": {
+                    "color": "#000000",
+                    "arrows": {
+                        "to": {
+                            "enabled": true, "scaleFactor": 0.5
+                        }
+                    }
+                },
+                "manipulation": {
+                    "enabled": true
+                },
+                "configure": {
+                    "enabled": true,
+                    "showButton": true
+                }   
+        }"""
+
+        network_pyvis.set_options(physics_options)
+        try:
+            output_path = os.path.abspath("network_graph.html")
+            network_pyvis.save_graph(output_path)
+            webbrowser.open(f"file://{output_path}")
+        except Exception as e:
+            print(f"Error rendering: {e}")
+
+
+
+species_lst = Species.get_yosemitie_species()
 
 
 network_test = EcologicalNetwork(species_list=species_lst)
 network_test.create_network()
 
-network_test.draw_graph()
+network_test.draw_graph_pyvis()
 
 #nx.draw_networkx(network_test.network, with_labels=True, node_size=100, font_size=4, pos=nx.spring_layout(network_test.network) )
 #plt.show()
