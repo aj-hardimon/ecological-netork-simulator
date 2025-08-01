@@ -256,7 +256,7 @@ class EcologicalNetwork():
         fig = go.Figure(data=[edge_trace, node_trace],
             layout=go.Layout(
                 title=dict(
-                    text="<br>Species interactions in Yosemitie National Park",
+                    text="<br>Species interactions",
                     font=dict(
                         size=16
                     )
