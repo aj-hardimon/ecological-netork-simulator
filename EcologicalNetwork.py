@@ -22,7 +22,17 @@ class EcologicalNetwork():
         Class Attributes:
         species_list: list of species in the network
         network: directed networkx graph where edges show eating relationships 
-        between species.
+        between species
+
+        create_network: fill in the nx DiGraph based on the species list
+        input and prepares the graph for pyvis visualization
+        get_prey_list(species): return a list of prey for input str species
+        get_predator_list(species): return a list of predators for input str
+        species
+        draw_graph_plotly: draw a plotly graph based on self.network after
+        create_network has been called
+        draw_graph_plotly: draw a pyvis graph based on self.network after
+        create_network has been called
     """
 
     def __init__(self, species_list):
@@ -33,10 +43,13 @@ class EcologicalNetwork():
         self.network = nx.DiGraph()
 
     def create_network(self):
+        """ Method that constructs the network between species, properly
+            labeling nodes and edges for later visualization.
+        """
         i = 0
         lst_len = len(self.species_list)
         
-        for species in ['canis lupus', 'lynx rufus', 'procyon lotor']:
+        for species in self.species_list:
             # Add a node for each species in the list and lebel them
             # according to their common name
             if(species not in self.network.nodes()):
@@ -163,8 +176,8 @@ class EcologicalNetwork():
             return None
 
     def draw_graph_plotly(self):
-        """ Method to draw the network as a Plotly graph."""
-        
+        """Method to draw the network as a Plotly graph."""
+
         edge_x = []
         edge_y = []
         pos = nx.spring_layout(self.network)
@@ -263,6 +276,9 @@ class EcologicalNetwork():
         fig.show(renderer="browser")
 
     def draw_graph_pyvis(self):
+        """Method to draw the network as a pyvis graph."""
+
+        # Network settings
         network_pyvis = Network(
             height='1000px', 
             width='100%',
@@ -276,8 +292,8 @@ class EcologicalNetwork():
 
         network_pyvis.from_nx(self.network)
 
-        
-        physics_options = """{
+        # Settings for generating graph with physics and labels
+        graph_options = """{
                 "physics": {
                     "forceAtlas2Based":{
                         "springLength": 100
@@ -307,24 +323,11 @@ class EcologicalNetwork():
                 }   
         }"""
 
-        
+        # Generate the graph
         try:
-            network_pyvis.set_options(physics_options)
+            network_pyvis.set_options(graph_options)
             output_path = os.path.abspath("network_graph.html")
             network_pyvis.save_graph(output_path)
             webbrowser.open(f"file://{output_path}")
         except Exception as e:
             print(f"Error rendering: {e}")
-
-
-
-species_lst = Species.get_yosemitie_species()
-
-
-network_test = EcologicalNetwork(species_list=species_lst)
-network_test.create_network()
-
-network_test.draw_graph_pyvis()
-
-#nx.draw_networkx(network_test.network, with_labels=True, node_size=100, font_size=4, pos=nx.spring_layout(network_test.network) )
-#plt.show()

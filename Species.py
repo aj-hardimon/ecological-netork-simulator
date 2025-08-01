@@ -5,27 +5,30 @@ Date: 7/23/2025
 """
 import csv
 import requests
-import os
 import time
 
 class Species:
     """ A class designed to hold the attributes of a species to be used in a
-    ecological relations graph.
+        ecological relations graph. The common name and category fields are
+        populated by API calls to iNaturalist in the constructor.
 
         Class Attributes:
         species_name: str representation of the species name for that instance
         of Species
         common_name: str of the common name for the species
-        category: str of the category of the species (ex: mammal)
+        category: str of the category of the species (ex: Mammalia, Aves)
 
         get_yosemitie_species(): returns a list of known species in Yosemitie
         accoring to the National Park Services
+        get_species_name: return self.species_name
+        get_common_name: return self.common_name
+        get_category: return self.category
     """
 
     def __init__(self, species_name):
-        """Simple constructor containing that uses a scientific species name
-            and uses data from Yosemitie National Park to fill in information
-            about that species.
+        """ Constructor that takes a scientific species name as input and
+            uses the iNaturalist API to fill in common names and the
+            category for that species.
         """
 
         self.species_name = species_name.lower()
@@ -34,6 +37,7 @@ class Species:
 
         url = f"https://api.inaturalist.org/v1/taxa?q={self.species_name}"
         
+        # Get info about species from iNaturalist
         sp_info_json = None
         try:
             response = requests.get(url)
@@ -46,19 +50,23 @@ class Species:
         except Exception as e:
             print(f"Exception: {e}")
 
+        # Double check json file is found
         if sp_info_json:
             try:
-                self.category = sp_info_json['results'][0]['iconic_taxon_name']
+                if len(sp_info_json['results'].keys()) >= 1:
+                    # Category of species is the same no matter the source
+                    self.category = sp_info_json['results'][0]['iconic_taxon_name']
                 for entry in sp_info_json['results']:
                     if 'preferred_common_name' in entry.keys():
+                        # Add common name to list if found
                         self.common_name.append(entry['preferred_common_name'])
             except Exception as e:
                 print(f"Exception: {e}, for species {self.species_name}")
 
     @staticmethod
     def get_yosemitie_species():
-        """ Uses a csv file to create a list of species within Yosemitie Natinoal
-            Park
+        """ Uses a csv file to create a list of species within Yosemitie National
+            Park.
         """
 
         yosemitie_species_lst = []
@@ -69,6 +77,7 @@ class Species:
             i = 0
             try:
                 for line in csv_reader:
+                    # First 5 lines of csv aren't needed
                     if i >= 5 and len(line) >= 4:
                         yosemitie_species_lst.append(line[3].lower())
                     i += 1
@@ -93,9 +102,7 @@ class Species:
             to read form.
         """
         comm_name = (str(self.common_name)).rstrip("]").lstrip("[").replace("'", "")
-        return(
-            f"{comm_name} is a {self.category}"
-            )
+        return(f"{comm_name} is in the {self.category} class.")
 
 
     def get_species_name(self):
