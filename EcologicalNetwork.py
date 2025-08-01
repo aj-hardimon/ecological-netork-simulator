@@ -115,7 +115,7 @@ class EcologicalNetwork():
                 return None
         except requests.exceptions.RequestException as e:
             # Handles API exceptions
-            print(f"Error: {e}")
+            print(f"Error getting prey json: {e}")
             return None
         
     @staticmethod
@@ -159,7 +159,7 @@ class EcologicalNetwork():
                 return None
         except requests.exceptions.RequestException as e:
             # Handles API exceptions
-            print(f"Error: {e}")
+            print(f"Error getting predator json: {e}")
             return None
 
     def draw_graph_plotly(self):

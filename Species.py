@@ -32,14 +32,8 @@ class Species:
         self.common_name = []
         self.category = None
 
-        if Species.verify_iNat_token() == False:
-            Species.get_iNat_token()
-
-
         url = f"https://api.inaturalist.org/v1/taxa?q={self.species_name}"
-        headers = {
-            "Authorizaton": f"{os.getenv("INATURALIST_API_TOKEN")}"
-        }
+        
         sp_info_json = None
         try:
             response = requests.get(url)
@@ -56,52 +50,10 @@ class Species:
             try:
                 self.category = sp_info_json['results'][0]['iconic_taxon_name']
                 for entry in sp_info_json['results']:
-                    self.common_name.append(entry['preferred_common_name'])
+                    if 'preferred_common_name' in entry.keys():
+                        self.common_name.append(entry['preferred_common_name'])
             except Exception as e:
                 print(f"Exception: {e}, for species {self.species_name}")
-
-
-    @staticmethod
-    def verify_iNat_token():
-        """Verify the iNat API token and returns boolean result."""
-
-        # Test API call
-        test_url = "https://api.inaturalist.org/v1/taxa?q=canis%20lupus"
-        headers = {
-            "Authorization": os.getenv("INATURALIST_API_TOKEN")
-        }
-
-        try:
-            response = requests.get(url=test_url, headers=headers)
-            if response.status_code == 200:
-                return True
-            elif response.status_code == 401:
-                print("Token is invalid or expired")
-                return False
-            else:
-                print(f"Unexpected status code: {response.status_code}")
-        except Exception as e:
-            print(f"Error verifying iNat token: {e}")
-            return False
-
-    @staticmethod 
-    def get_iNat_token():
-        """Retrieve a new iNat API token."""
-
-    url = "https://www.inaturalist.org/users/api_token"
-    token_json = None
-    try:
-        response = requests.get(url=url)
-        if response.status_code == 200:
-            token_json = response.json()
-            os.environ['INATURALIST_API_TOKEN'] = token_json['api_token']
-        else:
-            # Handles API fails
-            print(f"Response Failed: {response.status_code}")
-    except requests.exceptions.RequestException as e:
-        # Handles API exceptions
-        print(f"Error: {e}")
-    
 
     @staticmethod
     def get_yosemitie_species():
