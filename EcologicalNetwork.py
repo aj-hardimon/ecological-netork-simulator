@@ -307,8 +307,9 @@ class EcologicalNetwork():
                 }   
         }"""
 
-        network_pyvis.set_options(physics_options)
+        
         try:
+            network_pyvis.set_options(physics_options)
             output_path = os.path.abspath("network_graph.html")
             network_pyvis.save_graph(output_path)
             webbrowser.open(f"file://{output_path}")

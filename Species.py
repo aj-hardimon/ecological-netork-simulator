@@ -37,8 +37,6 @@ class Species:
 
 
         url = f"https://api.inaturalist.org/v1/taxa?q={self.species_name}"
-
-
         headers = {
             "Authorizaton": f"{os.getenv("INATURALIST_API_TOKEN")}"
         }
