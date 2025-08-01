@@ -1,5 +1,5 @@
 # Ecological Network Simulator
-The ecological network simulator is a python project that takes a list of input species and produces a network with species as nodes and edges conveying 
+The Ecological Network Simulator is a python project that takes a list of input species and produces a network with species as nodes and edges conveying 
 predator/prey relationships. 
 
 Relations between species are determined by the Global Biotic Interactions (GloBI) API. Only the predator --> prey relationship is shown in graph examples
