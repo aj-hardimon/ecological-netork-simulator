@@ -4,18 +4,22 @@ Author: AJ Hardimon
 Date: 7/23/2025
 """
 import csv
-import networkx as nx
+import requests
+import os
+import time
 
 class Species:
-    """ A class designed to hold the attributes of a species in Yosemitie
-        to be used in a ecological relations graph.
+    """ A class designed to hold the attributes of a species to be used in a
+    ecological relations graph.
 
         Class Attributes:
         species_name: str representation of the species name for that instance
         of Species
         common_name: str of the common name for the species
         category: str of the category of the species (ex: mammal)
-        nativeness: boolean of whether the species is native to Yosemitie
+
+        get_yosemitie_species(): returns a list of known species in Yosemitie
+        accoring to the National Park Services
     """
 
     def __init__(self, species_name):
@@ -25,31 +29,81 @@ class Species:
         """
 
         self.species_name = species_name.lower()
-        self.common_name = ""
-        self.category = ""
-        self.nativeness = False
+        self.common_name = []
+        self.category = None
 
-        file_path = "Data-Files/Species Full List with Details.csv"
+        if Species.verify_iNat_token() == False:
+            Species.get_iNat_token()
 
-        # Search through the csv file for species name
-        with open(file_path, "r") as species_csv:
-            csv_reader = csv.reader(species_csv)
-            i = 0
+
+        url = f"https://api.inaturalist.org/v1/taxa?q={self.species_name}"
+
+
+        headers = {
+            "Authorizaton": f"{os.getenv("INATURALIST_API_TOKEN")}"
+        }
+        sp_info_json = None
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                sp_info_json = response.json()
+                # iNat API needs 1 second of delay between calls
+                time.sleep(1)
+            else:
+                print(f"Response failed: {response.status_code}")
+        except Exception as e:
+            print(f"Exception: {e}")
+
+        if sp_info_json:
             try:
-                for line in csv_reader:
-                    if (i >= 5 and len(line) >= 7):
-                        line_species = line[3].lower()
-                        if line_species == species_name:
-                            # Species found in the csv file
-                            self.common_name = line[4].title()
-                            self.category = line[1]
-                            if(line[7] == "Native"):
-                                self.nativeness = True
-                            break
-                    i += 1
+                self.category = sp_info_json['results'][0]['iconic_taxon_name']
+                for entry in sp_info_json['results']:
+                    self.common_name.append(entry['preferred_common_name'])
             except Exception as e:
-                print(f"Error occured: {e}")
-        
+                print(f"Exception: {e}, for species {self.species_name}")
+
+
+    @staticmethod
+    def verify_iNat_token():
+        """Verify the iNat API token and returns boolean result."""
+
+        # Test API call
+        test_url = "https://api.inaturalist.org/v1/taxa?q=canis%20lupus"
+        headers = {
+            "Authorization": os.getenv("INATURALIST_API_TOKEN")
+        }
+
+        try:
+            response = requests.get(url=test_url, headers=headers)
+            if response.status_code == 200:
+                return True
+            elif response.status_code == 401:
+                print("Token is invalid or expired")
+                return False
+            else:
+                print(f"Unexpected status code: {response.status_code}")
+        except Exception as e:
+            print(f"Error verifying iNat token: {e}")
+            return False
+
+    @staticmethod 
+    def get_iNat_token():
+        """Retrieve a new iNat API token."""
+
+    url = "https://www.inaturalist.org/users/api_token"
+    token_json = None
+    try:
+        response = requests.get(url=url)
+        if response.status_code == 200:
+            token_json = response.json()
+            os.environ['INATURALIST_API_TOKEN'] = token_json['api_token']
+        else:
+            # Handles API fails
+            print(f"Response Failed: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        # Handles API exceptions
+        print(f"Error: {e}")
+    
 
     @staticmethod
     def get_yosemitie_species():
@@ -81,18 +135,16 @@ class Species:
             f"{class_name} "
             f"(species_name='{self.species_name}', "
             f"common_name={self.common_name}, "
-            f"category={self.category}, "
-            f"nativeness={self.nativeness})"
+            f"category={self.category}"
             )
 
     def __str__(self):
-        """ Return the common name, category, and nativeness in an easy
+        """ Return the common name and category in an easy
             to read form.
         """
+        comm_name = (str(self.common_name)).rstrip("]").lstrip("[").replace("'", "")
         return(
-            f"{self.common_name} " 
-            f"is a {self.category if self.category[-1] != "s" else self.category[:-1]} "
-            f"and is {"Native" if self.nativeness else "Non-Native"}"
+            f"{comm_name} is a {self.category}"
             )
 
 
@@ -107,7 +159,3 @@ class Species:
     def get_category(self):
         """Return category."""
         return self.category
-    
-    def get_nativeness(self):
-        "Return nativeness."
-        return self.nativeness

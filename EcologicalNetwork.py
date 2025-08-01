@@ -15,12 +15,14 @@ from Species import Species
 
 class EcologicalNetwork():
     """ A class that creates a graph of species with directed edges indicating
-        one species eating the other. These relationships will be used to
-        simulate population shifts.
+        one species eating the other. Species relations are acessed through
+        the Global Biotic Interactions (GloBI) API. Network visualization is
+        done through pyvis (prefered) or plotly.
 
         Class Attributes:
         species_list: list of species in the network
-        network: dict graph of eating relation between species
+        network: directed networkx graph where edges show eating relationships 
+        between species.
     """
 
     def __init__(self, species_list):
@@ -34,18 +36,19 @@ class EcologicalNetwork():
         i = 0
         lst_len = len(self.species_list)
         
-        for species in self.species_list:
+        for species in ['canis lupus', 'lynx rufus', 'procyon lotor']:
             # Add a node for each species in the list and lebel them
             # according to their common name
             if(species not in self.network.nodes()):
                 # Create an instance of Species class for species attirbutes
                 sp_attrb = Species(species_name=species)
+                sp_name = (str(sp_attrb.get_common_name())).rstrip("]").lstrip("[")
                 # Create a node compatible with pyvis
                 self.network.add_node(species, 
                                     id=sp_attrb.get_species_name(), 
-                                    label=sp_attrb.get_common_name(),
+                                    label=sp_name if sp_attrb.get_common_name() != "[]" else sp_attrb.get_species_name(),
                                     group=sp_attrb.get_category(),
-                                    title=f"{sp_attrb.get_common_name()} ({"Native" if sp_attrb.get_nativeness() else "Non-Native"})"
+                                    title=f"{sp_attrb.get_common_name()} ({sp_attrb.get_category()})"
                                     )
 
             prey_list = EcologicalNetwork.get_prey_list(species=species)
@@ -57,11 +60,12 @@ class EcologicalNetwork():
                         if prey not in self.network.nodes():
                             # Add prey to the graph if not found
                             pr_attrb = Species(species_name=prey)
+                            pr_name = (str(pr_attrb.get_common_name())).rstrip("]").lstrip("[").replace("'", "").replace('"', '')
                             self.network.add_node(prey, 
                                     id=pr_attrb.get_species_name(), 
-                                    label=pr_attrb.get_common_name(),
+                                    label= pr_name if pr_attrb.get_common_name() != "[]" else pr_attrb.get_species_name(),
                                     group=pr_attrb.get_category(),
-                                    title=f"{pr_attrb.get_common_name()} ({"Native" if pr_attrb.get_nativeness() else "Non-Native"})"
+                                    title=f"{pr_attrb.get_species_name()} ({pr_attrb.get_category()})"
                                     )
                         # Add the edge between species and prey
                         self.network.add_edge(species, prey, title=f"{self.network.nodes[species]['label']} eats {self.network.nodes[prey]['label']}")
@@ -158,7 +162,7 @@ class EcologicalNetwork():
             print(f"Error: {e}")
             return None
 
-    def draw_graph(self):
+    def draw_graph_plotly(self):
         """ Method to draw the network as a Plotly graph."""
         
         edge_x = []
