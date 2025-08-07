@@ -18,7 +18,7 @@ class Species:
         common_name: str of the common name for the species
         category: str of the category of the species (ex: Mammalia, Aves)
 
-        get_yosemitie_species(): returns a list of known species in Yosemitie
+        get_yosemite_species(): returns a list of known species in Yosemite
         accoring to the National Park Services
         get_species_name: return self.species_name
         get_common_name: return self.common_name
@@ -31,12 +31,13 @@ class Species:
             category for that species.
         """
 
+        # standardize name formatting for easier search
         self.species_name = species_name.lower()
         self.common_name = []
         self.category = None
 
         url = f"https://api.inaturalist.org/v1/taxa?q={self.species_name}"
-        
+
         # Get info about species from iNaturalist
         sp_info_json = None
         try:
@@ -64,12 +65,12 @@ class Species:
                 print(f"Exception: {e}, for species {self.species_name}")
 
     @staticmethod
-    def get_yosemitie_species():
-        """ Uses a csv file to create a list of species within Yosemitie National
+    def get_yosemite_species():
+        """ Uses a csv file to create a list of species within Yosemite National
             Park.
         """
 
-        yosemitie_species_lst = []
+        yosemite_species_lst = []
         file_path = "Data-Files/Species Full List with Details.csv"
 
         with open(file_path, "r") as species_csv:
@@ -79,13 +80,13 @@ class Species:
                 for line in csv_reader:
                     # First 5 lines of csv aren't needed
                     if i >= 5 and len(line) >= 4:
-                        yosemitie_species_lst.append(line[3].lower())
+                        yosemite_species_lst.append(line[3].lower())
                     i += 1
             except IndexError:
                 print("Index Error")
                 return None
             else:
-                return yosemitie_species_lst
+                return yosemite_species_lst
 
     def __repr__(self):
         """Return all class attributes and their values."""
